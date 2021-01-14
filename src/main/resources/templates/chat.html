@@ -1,0 +1,490 @@
+<html xmlns="http://www.w3.org/1999/xhtml" 
+    xmlns:th="http://www.thymeleaf.org" 
+    xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity3"
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Custom messanger</title>
+	<script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/3.0.0/handlebars.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.1.1/list.min.js"></script>
+    <!--    libs for stomp and sockjs-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <!--    end libs for stomp and sockjs-->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" rel="stylesheet"
+          type="text/css">
+    <style>
+    	@import url(https://fonts.googleapis.com/css?family=Lato:400,700);
+
+		*, *:before, *:after {
+		    box-sizing: border-box;
+		}
+		
+		body {
+		    background: #C5DDEB;
+		    font: 14px/20px "Lato", Arial, sans-serif;
+		    padding: 40px 0;
+		    color: white;
+		}
+		
+		.container {
+		    margin: 0 auto;
+		    width: 750px;
+		    background: #444753;
+		    border-radius: 5px;
+		}
+		
+		.people-list {
+		    width: 260px;
+		    float: left;
+		}
+		
+		.people-list .search {
+		    padding: 20px;
+		}
+		
+		.people-list input {
+		    border-radius: 3px;
+		    border: none;
+		    padding: 14px;
+		    color: #e1e1e1;
+		    background: #6A6C75;
+		    width: 90%;
+		    font-size: 14px;
+		}
+		
+		.people-list .fa-search {
+		    position: relative;
+		    left: -25px;
+		}
+		
+		.people-list ul {
+		    padding: 20px;
+		    height: 770px;
+		}
+		
+		.people-list ul li {
+		    padding-bottom: 20px;
+		}
+		
+		.people-list img {
+		    float: left;
+		}
+		
+		.people-list .about {
+		    float: left;
+		    margin-top: 8px;
+		}
+		
+		.people-list .about {
+		    padding-left: 8px;
+		}
+		
+		.people-list .status {
+		    color: #92959E;
+		}
+		
+		.chat {
+		    width: 490px;
+		    float: left;
+		    background: #F2F5F8;
+		    border-top-right-radius: 5px;
+		    border-bottom-right-radius: 5px;
+		    color: #434651;
+		}
+		
+		.chat .chat-header {
+		    padding: 20px;
+		    border-bottom: 2px solid white;
+		}
+		
+		.chat .chat-header img {
+		    float: left;
+		}
+		
+		.chat .chat-header .chat-about {
+		    float: left;
+		    padding-left: 10px;
+		    margin-top: 6px;
+		}
+		
+		.chat .chat-header .chat-with {
+		    font-weight: bold;
+		    font-size: 16px;
+		}
+		
+		.chat .chat-header .chat-num-messages {
+		    color: #92959E;
+		}
+		
+		.chat .chat-header .fa-star {
+		    float: right;
+		    color: #D8DADF;
+		    font-size: 20px;
+		    margin-top: 12px;
+		}
+		
+		ul {
+		    list-style-type: none;
+		}
+		
+		.chat .chat-history {
+		    padding: 30px 30px 20px;
+		    border-bottom: 2px solid white;
+		    overflow-y: scroll;
+		    height: 575px;
+		}
+		
+		.chat .chat-history .message-data {
+		    margin-bottom: 15px;
+		}
+		
+		.chat .chat-history .message-data-time {
+		    color: #a8aab1;
+		    padding-left: 6px;
+		}
+		
+		.chat .chat-history .message {
+		    color: white;
+		    padding: 18px 20px;
+		    line-height: 26px;
+		    font-size: 16px;
+		    border-radius: 7px;
+		    margin-bottom: 30px;
+		    width: 90%;
+		    position: relative;
+		}
+		
+		.chat .chat-history .message:after {
+		    bottom: 100%;
+		    left: 7%;
+		    border: solid transparent;
+		    content: " ";
+		    height: 0;
+		    width: 0;
+		    position: absolute;
+		    pointer-events: none;
+		    border-bottom-color: #86BB71;
+		    border-width: 10px;
+		    margin-left: -10px;
+		}
+		
+		.chat .chat-history .my-message {
+		    background: #86BB71;
+		}
+		
+		.chat .chat-history .other-message {
+		    background: #94C2ED;
+		}
+		
+		.chat .chat-history .other-message:after {
+		    border-bottom-color: #94C2ED;
+		    left: 93%;
+		}
+		
+		.chat .chat-message {
+		    padding: 30px;
+		}
+		
+		.chat .chat-message textarea {
+		    width: 100%;
+		    border: none;
+		    padding: 10px 20px;
+		    font: 14px/22px "Lato", Arial, sans-serif;
+		    margin-bottom: 10px;
+		    border-radius: 5px;
+		    resize: none;
+		}
+		
+		.chat .chat-message .fa-file-o, .chat .chat-message .fa-file-image-o {
+		    font-size: 16px;
+		    color: gray;
+		    cursor: pointer;
+		}
+		
+		.chat .chat-message button {
+		    float: right;
+		    color: #94C2ED;
+		    font-size: 16px;
+		    text-transform: uppercase;
+		    border: none;
+		    cursor: pointer;
+		    font-weight: bold;
+		    background: #F2F5F8;
+		}
+		
+		.chat .chat-message button:hover {
+		    color: #75b1e8;
+		}
+		
+		.online, .offline, .me {
+		    margin-right: 3px;
+		    font-size: 10px;
+		}
+		
+		.online {
+		    color: #86BB71;
+		}
+		
+		.offline {
+		    color: #E38968;
+		}
+		
+		.me {
+		    color: #94C2ED;
+		}
+		
+		.align-left {
+		    text-align: left;
+		}
+		
+		.align-right {
+		    text-align: right;
+		}
+		
+		.float-right {
+		    float: right;
+		}
+		
+		.clearfix:after {
+		    visibility: hidden;
+		    display: block;
+		    font-size: 0;
+		    content: " ";
+		    clear: both;
+		    height: 0;
+		}
+    
+	</style>
+</head>
+<body>
+<div class="container clearfix">
+    <div class="people-list" id="people-list">
+      WELCOME [[${#request.userPrincipal.principal.fullName}]]
+        <div class="search">
+            <input id="userName" placeholder="Write your userName" type="text"/>
+            <button onclick="registration()">Enter the chat</button>
+            <button onclick="fetchAll()">Refresh</button>
+        </div>
+        <ul class="list" id="usersList">
+
+
+        </ul>
+    </div>
+
+    <div class="chat">
+        <div class="chat-header clearfix">
+            <img alt="avatar" height="55px"
+                 src="https://rtfm.co.ua/wp-content/plugins/all-in-one-seo-pack/images/default-user-image.png"
+                 width="55px"/>
+
+            <div class="chat-about">
+                <div class="chat-with" id="selectedUserId"></div>
+                <div class="chat-num-messages"></div>
+            </div>
+            <i class="fa fa-star"></i>
+        </div> <!-- end chat-header -->
+
+        <div class="chat-history">
+            <ul>
+
+            </ul>
+
+        </div> <!-- end chat-history -->
+
+        <div class="chat-message clearfix">
+            <textarea id="message-to-send" name="message-to-send" placeholder="Type your message" rows="3"></textarea>
+
+            <i class="fa fa-file-o"></i> &nbsp;&nbsp;&nbsp;
+            <i class="fa fa-file-image-o"></i>
+
+            <button id="sendBtn">Send</button>
+
+        </div> <!-- end chat-message -->
+
+    </div> <!-- end chat -->
+
+</div> <!-- end container -->
+
+<script id="message-template" type="text/x-handlebars-template">
+    <li class="clearfix">
+        <div class="message-data align-right">
+            <span class="message-data-time">{{time}}, Today</span> &nbsp; &nbsp;
+            <span class="message-data-name">You</span> <i class="fa fa-circle me"></i>
+        </div>
+        <div class="message other-message float-right">
+            {{messageOutput}}
+        </div>
+    </li>
+</script>
+
+<script id="message-response-template" type="text/x-handlebars-template">
+    <li>
+        <div class="message-data">
+            <span class="message-data-name"><i class="fa fa-circle online"></i> {{userName}}</span>
+            <span class="message-data-time">{{time}}, Today</span>
+        </div>
+        <div class="message my-message">
+            {{response}}
+        </div>
+    </li>
+</script>
+
+<script>
+	let $chatHistory;
+	let $button;
+	let $textarea;
+	let $chatHistoryList;
+	
+	function init() {
+	    cacheDOM();
+	    bindEvents();
+	}
+	
+	function bindEvents() {
+	    $button.on('click', addMessage.bind(this));
+	    $textarea.on('keyup', addMessageEnter.bind(this));
+	}
+	
+	function cacheDOM() {
+	    $chatHistory = $('.chat-history');
+	    $button = $('#sendBtn');
+	    $textarea = $('#message-to-send');
+	    $chatHistoryList = $chatHistory.find('ul');
+	}
+	
+	function render(message, userName) {
+	    scrollToBottom();
+	    // responses
+	    var templateResponse = Handlebars.compile($("#message-response-template").html());
+	    var contextResponse = {
+	        response: message,
+	        time: getCurrentTime(),
+	        userName: userName
+	    };
+	
+	    setTimeout(function () {
+	        $chatHistoryList.append(templateResponse(contextResponse));
+	        scrollToBottom();
+	    }.bind(this), 1500);
+	}
+	
+	function sendMessage(message) {
+	    let username = $('#userName').val();
+	    console.log(username)
+	    sendMsg(username, message);
+	    scrollToBottom();
+	    if (message.trim() !== '') {
+	        var template = Handlebars.compile($("#message-template").html());
+	        var context = {
+	            messageOutput: message,
+	            time: getCurrentTime()
+	        };
+	
+	        $chatHistoryList.append(template(context));
+	        scrollToBottom();
+	        $textarea.val('');
+	    }
+	}
+	
+	function scrollToBottom() {
+	    $chatHistory.scrollTop($chatHistory[0].scrollHeight);
+	}
+	
+	function getCurrentTime() {
+	    return new Date().toLocaleTimeString().replace(/([\d]+:[\d]{2})(:[\d]{2})(.*)/, "$1$3");
+	}
+	
+	function addMessage() {
+	    sendMessage($textarea.val());
+	}
+	
+	function addMessageEnter(event) {
+	    // enter was pressed
+	    if (event.keyCode === 13) {
+	        addMessage();
+	    }
+	}
+	
+	init();
+
+
+	const url = 'http://localhost:8080';
+	let stompClient;
+	let selectedUser;
+	let newMessages = new Map();
+	
+	function connectToChat(userName) {
+	    console.log("connecting to chat...")
+	    let socket = new SockJS(url + '/chat');
+	    stompClient = Stomp.over(socket);
+	    stompClient.connect({}, function (frame) {
+	        console.log("connected to: " + frame);
+	        stompClient.subscribe("/topic/messages/" + userName, function (response) {
+	            let data = JSON.parse(response.body);
+	            if (selectedUser === data.fromLogin) {
+	                render(data.message, data.fromLogin);
+	            } else {
+	                newMessages.set(data.fromLogin, data.message);
+	                $('#userNameAppender_' + data.fromLogin).append('<span id="newMessage_' + data.fromLogin + '" style="color: red">+1</span>');
+	            }
+	        });
+	    });
+	}
+	
+	function sendMsg(from, text) {
+	    stompClient.send("/app/chat/" + selectedUser, {}, JSON.stringify({
+	        fromLogin: from,
+	        message: text
+	    }));
+	}
+	
+	function registration() {
+	    let userName = document.getElementById("userName").value;
+	    $.get(url + "/registration/" + userName, function (response) {
+	        connectToChat(userName);
+	    }).fail(function (error) {
+	        if (error.status === 400) {
+	            alert("Login is already busy!")
+	        }
+	    })
+	}
+	
+	function selectUser(userName) {
+	    console.log("selecting users: " + userName);
+	    selectedUser = userName;
+	    let isNew = document.getElementById("newMessage_" + userName) !== null;
+	    if (isNew) {
+	        let element = document.getElementById("newMessage_" + userName);
+	        element.parentNode.removeChild(element);
+	        render(newMessages.get(userName), userName);
+	    }
+	    $('#selectedUserId').html('');
+	    $('#selectedUserId').append('Chat with ' + userName);
+	}
+	
+	function fetchAll() {
+	    $.get(url + "/fetchAllUsers", function (response) {
+	        let users = response;
+	        let usersTemplateHTML = "";
+	        for (let i = 0; i < users.length; i++) {
+	            usersTemplateHTML = usersTemplateHTML + '<a href="#" onclick="selectUser(\'' + users[i] + '\')"><li class="clearfix">\n' +
+	                '                <img src="https://rtfm.co.ua/wp-content/plugins/all-in-one-seo-pack/images/default-user-image.png" width="55px" height="55px" alt="avatar" />\n' +
+	                '                <div class="about">\n' +
+	                '                    <div id="userNameAppender_' + users[i] + '" class="name">' + users[i] + '</div>\n' +
+	                '                    <div class="status">\n' +
+	                '                        <i class="fa fa-circle offline"></i>\n' +
+	                '                    </div>\n' +
+	                '                </div>\n' +
+	                '            </li></a>';
+	        }
+	        $('#usersList').html(usersTemplateHTML);
+	    });
+	}
+</script>
+</body>
+</html>
